@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"main/database"
 	"main/models"
 	"net/http"
@@ -10,44 +11,38 @@ import (
 
 func CreateTask(c *gin.Context) {
 	var task models.Task
-	c.BindJSON(&task)
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	database.DB.Create(&task)
+	if err := database.DB.Create(&task).Error; err != nil {
+		log.Printf("Failed to create task: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create task"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"data": task})
+	log.Println("Task created")
+}
 
-	c.JSON(http.StatusCreated, task)
+func GetTasks(c *gin.Context) {
+	var tasks []models.Task
+	result := database.DB.Find(&tasks)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get tasks"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": tasks})
+	log.Println("Tasks showed")
 }
 
 func GetTask(c *gin.Context) {
-	var task models.Task
 	id := c.Param("id")
-	database.DB.First(&task, id)
-
-	c.JSON(http.StatusOK, task)
-}
-
-func GetAllTasks(c *gin.Context) {
-	var tasks []models.Task
-	database.DB.Find(&tasks)
-}
-
-func UpdateTask(c *gin.Context) {
 	var task models.Task
-	id := c.Param("id")
-	database.DB.First(&task, id)
-
-	c.BindJSON(&task)
-
-	database.DB.Save(&task)
-
-	c.JSON(http.StatusOK, task)
-}
-
-func DeleteTask(c *gin.Context) {
-	var task models.Task
-	id := c.Param("id")
-	database.DB.First(&task, id)
-
-	database.DB.Delete(&task)
-
-	c.JSON(http.StatusOK, gin.H{"id" + id: "deleted"})
+	if err := database.DB.First(&task, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": task})
+	log.Println("Task showed")
 }
