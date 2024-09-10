@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log"
 	"main/database"
 	"main/database/models"
@@ -21,20 +22,46 @@ func CreateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create task"})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"data": task})
+
+	beautifiedJSON, err := json.MarshalIndent(task, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to beautify JSON"})
+		return
+	}
+
+	c.Data(http.StatusCreated, "application/json", beautifiedJSON)
+
 	log.Println("Task created")
 }
 
 func GetAllTasks(c *gin.Context) {
 	tasks := database.GetAllTasks()
-	c.JSON(http.StatusOK, gin.H{"data": tasks})
+
+	beautifiedJSON, err := json.MarshalIndent(tasks, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to beautify JSON"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", beautifiedJSON)
+
+	// c.JSON(http.StatusOK, gin.H{"data": tasks})
 	log.Println("Tasks showed")
 }
 
 func GetTask(c *gin.Context) {
 	id := c.Param("id")
 	task := database.GetTask(id)
-	c.JSON(http.StatusOK, gin.H{"data": task})
+
+	beautifiedJSON, err := json.MarshalIndent(task, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to beautify JSON"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", beautifiedJSON)
+
+	// c.JSON(http.StatusOK, gin.H{"data": task})
 	log.Println("Task showed")
 }
 
@@ -46,7 +73,14 @@ func UpdateTask(c *gin.Context) {
 	}
 
 	database.UpdateTask(&task)
-	c.JSON(http.StatusOK, gin.H{"data": task})
+
+	beautifiedJSON, err := json.MarshalIndent(task, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to beautify JSON"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", beautifiedJSON)
 	log.Println("Task updated")
 }
 
